@@ -66,11 +66,13 @@
 
         <p>Envie uma imagem e remova o fundo automaticamente.</p>
 
-        <input type="file" id="imageInput">
+        <input type="file" id="imageInput" accept="image/*">
 
         <br>
 
-        <button onclick="removeBackground()">Remover Fundo</button>
+        <button id="removeBtn" onclick="removeBackground()">Remover Fundo</button>
+
+        <p id="status" style="margin-top: 15px; font-weight: bold;"></p>
 
         <div id="result"></div>
 
@@ -85,6 +87,8 @@
         async function removeBackground() {
 
             const fileInput = document.getElementById("imageInput")
+            const statusLabel = document.getElementById("status")
+            const removeBtn = document.getElementById("removeBtn")
 
             if (fileInput.files.length === 0) {
                 alert("Escolha uma imagem")
@@ -93,32 +97,56 @@
 
             const file = fileInput.files[0]
 
+            // Loading state
+            statusLabel.innerText = "Removendo fundo... Aguarde (pode levar alguns segundos)."
+            statusLabel.style.color = "#FF9800"
+            removeBtn.disabled = true;
+            removeBtn.innerText = "Processando..."
+
             const formData = new FormData()
             formData.append("image_file", file)
 
             const apiKey = "dfwtGSjBL13LNXXS2cEJzqgA"
 
-            const response = await fetch("https://api.remove.bg/v1.0/removebg", {
-                method: "POST",
-                headers: {
-                    "X-Api-Key": apiKey
-                },
-                body: formData
-            })
+            try {
+                const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+                    method: "POST",
+                    headers: {
+                        "X-Api-Key": apiKey
+                    },
+                    body: formData
+                })
 
-            if (!response.ok) {
-                alert("Erro ao remover fundo")
-                return
+                if (!response.ok) {
+                    alert("Erro ao remover fundo")
+                    statusLabel.innerText = "Erro ao processar imagem."
+                    statusLabel.style.color = "red"
+                    removeBtn.disabled = false;
+                    removeBtn.innerText = "Remover Fundo"
+                    return
+                }
+
+                const blob = await response.blob()
+                const url = URL.createObjectURL(blob)
+
+                document.getElementById("result").innerHTML = `<img src="${url}">`
+
+                const download = document.getElementById("downloadLink")
+                download.href = url
+                download.style.display = "inline-block"
+
+                // Success state
+                statusLabel.innerText = "Fundo removido com sucesso!"
+                statusLabel.style.color = "#4CAF50"
+
+            } catch (error) {
+                console.error(error)
+                statusLabel.innerText = "Erro de conexão."
+                statusLabel.style.color = "red"
+            } finally {
+                removeBtn.disabled = false;
+                removeBtn.innerText = "Remover Fundo"
             }
-
-            const blob = await response.blob()
-            const url = URL.createObjectURL(blob)
-
-            document.getElementById("result").innerHTML = `<img src="${url}">`
-
-            const download = document.getElementById("downloadLink")
-            download.href = url
-            download.style.display = "inline-block"
 
         }
 
